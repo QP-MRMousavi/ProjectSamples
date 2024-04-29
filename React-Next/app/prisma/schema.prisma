@@ -1,0 +1,554 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model app_configs {
+  id    Int    @id
+  name  String @db.VarChar(255)
+  value String @db.VarChar(255)
+}
+
+model app_permissions {
+  id              Int             @id @default(autoincrement())
+  user_id         Int
+  section_id      Int
+  section_seq     Int
+  subsection_id   Int
+  subsection_seq  Int
+  r               String          @default("0") @db.VarChar(2)
+  c               String          @default("0") @db.VarChar(2)
+  u               String          @default("0") @db.VarChar(2)
+  d               String          @default("0") @db.VarChar(2)
+  tmp1            Int?
+  tmp2            Int?
+  users           users           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "app_permissions_ibfk_1")
+  app_sections    app_sections    @relation(fields: [section_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "app_permissions_ibfk_2")
+  app_subsections app_subsections @relation(fields: [subsection_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "app_permissions_ibfk_3")
+
+  @@index([section_id], map: "section_id")
+  @@index([subsection_id], map: "subsection_id")
+  @@index([user_id], map: "user_id")
+}
+
+model app_project_job_price {
+  id          Int        @id @default(autoincrement())
+  projectId   Int?
+  jobTitileId Int?
+  price       Decimal    @default(0) @db.Decimal(10, 0)
+  currency    String     @default("AMD") @db.VarChar(5)
+  positions   positions? @relation(fields: [jobTitileId], references: [id], onDelete: Cascade, map: "jobTitleIdKey")
+  projects    projects?  @relation(fields: [projectId], references: [id], onDelete: Cascade, map: "projectIdKey")
+
+  @@index([jobTitileId], map: "jobTitileId")
+  @@index([projectId], map: "projectIdIndex")
+}
+
+model app_sections {
+  id              Int               @id @default(autoincrement())
+  code            String            @unique(map: "code") @db.VarChar(4)
+  position        Int               @default(0) @db.SmallInt
+  name            String            @unique(map: "name") @db.VarChar(50)
+  is_active       Boolean           @default(false)
+  icon            String            @db.VarChar(255)
+  link            String            @db.VarChar(255)
+  color           String?           @db.VarChar(50)
+  app_permissions app_permissions[]
+}
+
+model app_subsections {
+  id              Int               @id @default(autoincrement())
+  code            String            @unique(map: "code") @db.VarChar(4)
+  position        Int               @default(0) @db.SmallInt
+  name            String            @db.VarChar(50)
+  is_active       Boolean           @default(false)
+  icon            String?           @db.VarChar(255)
+  link            String            @db.VarChar(255)
+  app_permissions app_permissions[]
+}
+
+model app_user_configs {
+  id      Int    @id @default(autoincrement())
+  user_id Int
+  name    String @db.VarChar(255)
+  value   String @db.VarChar(255)
+  users   users  @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "app_user_configs_ibfk_1")
+
+  @@unique([user_id, name], map: "user_settings_unique")
+}
+
+model apt_statuses {
+  id       Int        @id @default(autoincrement())
+  name     String     @db.VarChar(50)
+  note     String?    @db.VarChar(255)
+  tmp1     Int?
+  projects projects[]
+}
+
+model ass_operations {
+  id          Int         @id @default(autoincrement())
+  oper_id     Int
+  ass_id      Int
+  assignments assignments @relation(fields: [ass_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ass_operations_ibfk_1")
+  operations  operations  @relation(fields: [oper_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ass_operations_ibfk_2")
+
+  @@index([ass_id], map: "ass_oper_constr_1")
+  @@index([oper_id, ass_id], map: "ass_oper_key")
+}
+
+model assignments {
+  id              Int               @id @default(autoincrement())
+  name            String            @unique(map: "name") @db.VarChar(100)
+  description     String?           @db.VarChar(255)
+  is_visible      Boolean
+  billing_rate    Decimal?          @default(0.00) @db.Decimal(10, 2)
+  currency_id     Int?
+  tmp             Int               @default(0)
+  tmp1            Int               @default(0)
+  ass_operations  ass_operations[]
+  currencies      currencies?       @relation(fields: [currency_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "assignments_ibfk_1")
+  dep_assignments dep_assignments[]
+  project_assmts  project_assmts[]
+  projects        projects[]
+
+  @@index([currency_id], map: "ass_cur_id")
+}
+
+model business_sectors {
+  id             Int              @id @default(autoincrement())
+  name           String           @db.VarChar(255)
+  note           String?          @db.VarChar(255)
+  tmp1           Int?
+  client_sectors client_sectors[]
+}
+
+model business_type {
+  id      Int       @id @default(autoincrement())
+  name    String    @db.VarChar(30)
+  note    String?   @db.VarChar(255)
+  tmp1    Int?
+  clients clients[]
+}
+
+model client_sectors {
+  id               Int              @id @default(autoincrement())
+  client_id        Int
+  sector_id        Int
+  clients          clients          @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "client_sectors_ibfk_1")
+  business_sectors business_sectors @relation(fields: [sector_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "client_sectors_ibfk_2")
+
+  @@index([client_id, sector_id], map: "cli_sec_key")
+  @@index([sector_id], map: "clnt_sctrs_constr_2")
+}
+
+model clients {
+  id             Int              @id @default(autoincrement())
+  name           String           @unique(map: "client_name") @db.VarChar(255)
+  abbr           String           @unique(map: "client_abbr") @db.VarChar(50)
+  phone          String?          @db.VarChar(100)
+  address        String?          @db.VarChar(255)
+  contact_person String?          @db.VarChar(100)
+  email          String?          @db.VarChar(100)
+  bank_acc       String?          @db.VarChar(50)
+  btype_id       Int?
+  reg_num        String?          @db.VarChar(100)
+  tin            String?          @db.VarChar(8)
+  is_visible     Boolean          @default(false)
+  tmp1           Int?
+  tmp2           Int?
+  client_sectors client_sectors[]
+  business_type  business_type?   @relation(fields: [btype_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "clients_ibfk_1")
+  dep_clients    dep_clients[]
+  projects       projects[]
+
+  @@index([btype_id], map: "clnt_bsns_type")
+}
+
+model comp_deps {
+  id          Int         @id @default(autoincrement())
+  org_id      Int
+  dep_id      Int
+  departments departments @relation(fields: [dep_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "comp_deps_ibfk_1")
+  company     company     @relation(fields: [org_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "comp_deps_ibfk_2")
+
+  @@index([org_id, dep_id], map: "org_dep_key")
+  @@index([dep_id], map: "org_deps_constr_1")
+}
+
+model company {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique(map: "name") @db.VarChar(100)
+  head_id     Int
+  logo        String        @db.VarChar(255)
+  tmp1        String?       @db.VarChar(255)
+  tmp2        String?       @db.VarChar(255)
+  comp_deps   comp_deps[]
+  users       users         @relation(fields: [head_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "company_ibfk_1")
+  departments departments[]
+
+  @@index([head_id], map: "head_id")
+}
+
+model currencies {
+  id          Int           @id
+  name        String        @unique(map: "curr_name") @db.VarChar(15)
+  note        String?       @db.VarChar(100)
+  assignments assignments[]
+}
+
+model dep_assignments {
+  id          Int         @id @default(autoincrement())
+  dep_id      Int
+  ass_id      Int
+  assignments assignments @relation(fields: [ass_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "dep_assignments_ibfk_1")
+  departments departments @relation(fields: [dep_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "dep_assignments_ibfk_2")
+
+  @@index([ass_id], map: "dep_ass_constr_1")
+  @@index([dep_id, ass_id], map: "dep_ass_key")
+}
+
+model dep_clients {
+  id          Int         @id @default(autoincrement())
+  dep_id      Int
+  client_id   Int
+  departments departments @relation(fields: [dep_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "dep_clients_ibfk_1")
+  clients     clients     @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "dep_clients_ibfk_2")
+
+  @@index([client_id], map: "dep_cl_constr_2")
+  @@index([dep_id, client_id], map: "dep_id")
+}
+
+model departments {
+  id              Int               @id @default(autoincrement())
+  name            String            @unique(map: "name") @db.VarChar(100)
+  head_id         Int
+  org_id          Int
+  tmp1            Int?
+  tmp2            Int?
+  comp_deps       comp_deps[]
+  dep_assignments dep_assignments[]
+  dep_clients     dep_clients[]
+  users           users             @relation(fields: [head_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "departments_ibfk_1")
+  company         company           @relation(fields: [org_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "departments_ibfk_2")
+  positions       positions[]
+
+  @@index([head_id], map: "deps_constr_1")
+  @@index([org_id], map: "deps_constr_2")
+}
+
+model keys {
+  id             Int     @id @default(autoincrement())
+  user_id        Int
+  key            String  @db.VarChar(40)
+  level          Int
+  ignore_limits  Boolean @default(false)
+  is_private_key Boolean @default(false)
+  ip_addresses   String? @db.Text
+  date_created   Int
+}
+
+model logs {
+  id            Int     @id @default(autoincrement())
+  uri           String  @db.VarChar(255)
+  method        String  @db.VarChar(6)
+  params        String? @db.Text
+  api_key       String  @db.VarChar(40)
+  ip_address    String  @db.VarChar(45)
+  time          Int
+  rtime         Float?  @db.Float
+  authorized    String  @db.VarChar(1)
+  response_code Int?    @default(0) @db.SmallInt
+}
+
+model operations {
+  id             Int              @id @default(autoincrement())
+  name           String           @unique(map: "name") @db.VarChar(100)
+  note           String?          @db.VarChar(255)
+  is_visible     Boolean
+  tmp            Int              @default(0)
+  tmp1           Int              @default(0)
+  ass_operations ass_operations[]
+  ts_history     ts_history[]
+  ts_main        ts_main[]
+}
+
+model positions {
+  id                    Int                     @id @default(autoincrement())
+  name                  String                  @unique(map: "name") @db.VarChar(100)
+  dep_id                Int?
+  note                  String                  @db.VarChar(255)
+  tmp1                  Int?
+  tmp2                  Int?
+  app_project_job_price app_project_job_price[]
+  departments           departments?            @relation(fields: [dep_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "positions_ibfk_1")
+  users                 users[]
+
+  @@index([dep_id], map: "dep_id")
+}
+
+model project_assmts {
+  id          Int         @id @default(autoincrement())
+  project_id  Int
+  assmts_id   Int
+  projects    projects    @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_assmts_ibfk_1")
+  assignments assignments @relation(fields: [assmts_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_assmts_ibfk_2")
+
+  @@index([project_id, assmts_id], map: "prj_asmts_key")
+  @@index([assmts_id], map: "prj_assmts_constr_2")
+}
+
+model project_planning {
+  id      Int     @id @default(autoincrement())
+  pr_id   Int
+  ass_id  Int
+  oper_id Int
+  time    Decimal @db.Decimal(10, 2)
+  user_id Int?
+  tmp1    Int?
+  tmp2    Int?
+  comment String  @db.VarChar(255)
+
+  @@index([pr_id], map: "pr_id")
+}
+
+model project_statuses {
+  id       Int        @id @default(autoincrement())
+  name     String     @db.VarChar(50)
+  note     String?    @db.VarChar(255)
+  tmp1     Int?
+  projects projects[]
+}
+
+model project_team {
+  id         Int      @id @default(autoincrement())
+  project_id Int
+  user_id    Int
+  projects   projects @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_team_ibfk_1")
+  users      users    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_team_ibfk_2")
+
+  @@index([user_id], map: "prj_tm_constr_2")
+  @@index([project_id, user_id], map: "prj_tm_key")
+}
+
+model projects {
+  id                               Int                     @id @default(autoincrement())
+  name                             String                  @unique(map: "prj_name_1") @db.VarChar(100)
+  code                             String                  @unique(map: "prj_code_1") @db.VarChar(15)
+  client_id                        Int
+  ass_id                           Int
+  ass_dep_id                       Int?
+  ep_id                            Int?
+  manager_id                       Int
+  creation_date                    DateTime                @db.DateTime(0)
+  created_by                       Int?
+  start_date                       DateTime                @db.Date
+  end_date                         DateTime                @db.Date
+  actual_start_date                DateTime                @db.Date
+  actual_end_date                  DateTime                @db.Date
+  apt_status_id                    Int?
+  status_id                        Int?                    @default(1)
+  percent_status                   Int?
+  is_visible                       Boolean
+  note                             String                  @db.VarChar(255)
+  tmp2                             Int?
+  app_project_job_price            app_project_job_price[]
+  project_assmts                   project_assmts[]
+  project_team                     project_team[]
+  users_projects_manager_idTousers users                   @relation("projects_manager_idTousers", fields: [manager_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "projects_ibfk_1")
+  clients                          clients                 @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "projects_ibfk_2")
+  apt_statuses                     apt_statuses?           @relation(fields: [apt_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "projects_ibfk_3")
+  project_statuses                 project_statuses?       @relation(fields: [status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "projects_ibfk_4")
+  assignments                      assignments             @relation(fields: [ass_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "projects_ibfk_5")
+  users_projects_created_byTousers users?                  @relation("projects_created_byTousers", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "projects_ibfk_6")
+  users_projects_ep_idTousers      users?                  @relation("projects_ep_idTousers", fields: [ep_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "projects_ibfk_7")
+  ts_history                       ts_history[]
+  ts_main                          ts_main[]
+
+  @@index([ass_id], map: "ass_id")
+  @@index([created_by], map: "created_by")
+  @@index([apt_status_id], map: "prjct_apt_stat_constr_1")
+  @@index([client_id], map: "prjct_client_constr__1")
+  @@index([manager_id], map: "prjct_lead_constr_1")
+  @@index([status_id], map: "prjct_stat_constr_1")
+  @@index([ep_id], map: "projects_ibfk_7")
+}
+
+model ts_absence {
+  id            Int           @id @default(autoincrement())
+  ts_id         Int
+  absence_id    Int
+  wd1           Int           @default(0)
+  wd2           Int           @default(0)
+  wd3           Int           @default(0)
+  wd4           Int           @default(0)
+  wd5           Int           @default(0)
+  wd6           Int           @default(0)
+  wd7           Int           @default(0)
+  note          String        @default("") @db.VarChar(255)
+  tmp1          Int?
+  tmp2          Int?
+  tmp3          Int?
+  ts_timesheets ts_timesheets @relation(fields: [ts_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ts_absence_ibfk_1")
+
+  @@index([ts_id], map: "tsabs_ts_constr_1")
+  @@index([absence_id], map: "tsabs_type_constr_1")
+}
+
+model ts_absence_types {
+  id         Int       @id @default(autoincrement())
+  sort_order Int
+  name       String    @unique(map: "name") @db.VarChar(50)
+  note       String?   @db.VarChar(255)
+  tmp1       Int?
+  ts_main    ts_main[]
+}
+
+model ts_activity_types {
+  id      Int       @id @default(autoincrement())
+  code    String    @db.VarChar(3)
+  name    String    @unique(map: "name") @db.VarChar(50)
+  note    String?   @db.VarChar(255)
+  tmp1    Int?
+  ts_main ts_main[]
+}
+
+model ts_history {
+  id             Int           @id @default(autoincrement())
+  action_date    DateTime      @db.DateTime(0)
+  ts_id          Int
+  project_id     Int?
+  operation_id   Int?
+  touched_object String        @db.VarChar(50)
+  user_id        Int
+  status_id      Int
+  comment        String?       @db.VarChar(255)
+  tmp1           Int?
+  tmp2           Int?
+  users          users         @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ts_history_ibfk_1")
+  ts_statuses    ts_statuses   @relation(fields: [status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ts_history_ibfk_5")
+  ts_timesheets  ts_timesheets @relation(fields: [ts_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ts_history_ibfk_6")
+  projects       projects?     @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ts_history_ibfk_7")
+  operations     operations?   @relation(fields: [operation_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ts_history_ibfk_8")
+
+  @@index([operation_id], map: "operation_id")
+  @@index([project_id], map: "project_id")
+  @@index([status_id], map: "ts_hstr_status_constr_1")
+  @@index([user_id], map: "ts_hstr_user_constr1")
+  @@index([ts_id], map: "ts_main_id")
+}
+
+model ts_main {
+  id                Int                @id @default(autoincrement())
+  ts_id             Int
+  ts_type           Int
+  activity_id       Int?
+  project_id        Int?
+  operation_id      Int?
+  absence_id        Int?
+  wd1               Decimal            @default(0.0) @db.Decimal(3, 1)
+  wd2               Decimal            @default(0.0) @db.Decimal(3, 1)
+  wd3               Decimal            @default(0.0) @db.Decimal(3, 1)
+  wd4               Decimal            @default(0.0) @db.Decimal(3, 1)
+  wd5               Decimal            @default(0.0) @db.Decimal(3, 1)
+  wd6               Decimal            @default(0.0) @db.Decimal(3, 1)
+  wd7               Decimal            @default(0.0) @db.Decimal(3, 1)
+  note              String?            @db.VarChar(255)
+  is_accepted       Int?               @default(0) @db.TinyInt
+  tmp2              Int?
+  ts_timesheets     ts_timesheets      @relation(fields: [ts_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ts_main_ibfk_1")
+  projects          projects?          @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ts_main_ibfk_3")
+  operations        operations?        @relation(fields: [operation_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ts_main_ibfk_4")
+  ts_activity_types ts_activity_types? @relation(fields: [activity_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ts_main_ibfk_5")
+  ts_absence_types  ts_absence_types?  @relation(fields: [absence_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ts_main_ibfk_6")
+
+  @@index([absence_id], map: "absence_id")
+  @@index([activity_id], map: "tsmn_act_constr_1")
+  @@index([operation_id], map: "tsmn_oper_constr_1")
+  @@index([project_id], map: "tsmn_proj_constr_1")
+  @@index([ts_id], map: "tsmn_ts_constr_1")
+}
+
+model ts_statuses {
+  id            Int             @id @default(autoincrement())
+  name          String          @unique(map: "name") @db.VarChar(50)
+  note          String?         @db.VarChar(255)
+  label         String          @db.VarChar(50)
+  tmp1          Int?
+  ts_history    ts_history[]
+  ts_timesheets ts_timesheets[]
+}
+
+model ts_timesheets {
+  id            Int          @id @default(autoincrement())
+  ts_week_id    Int
+  created       DateTime     @db.DateTime(0)
+  last_modified DateTime?    @db.DateTime(0)
+  status_id     Int
+  user_id       Int
+  note          String?      @db.VarChar(255)
+  tmp1          Int?
+  tmp2          Int?
+  ts_absence    ts_absence[]
+  ts_history    ts_history[]
+  ts_main       ts_main[]
+  users         users        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ts_timesheets_ibfk_1")
+  ts_statuses   ts_statuses  @relation(fields: [status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ts_timesheets_ibfk_2")
+  ts_weeks      ts_weeks     @relation(fields: [ts_week_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ts_timesheets_ibfk_3")
+
+  @@index([status_id], map: "status")
+  @@index([user_id], map: "ts_ts_user_constr1")
+  @@index([ts_week_id], map: "ts_week_id")
+}
+
+model ts_weeks {
+  id            Int             @id @default(autoincrement())
+  ts_year       Int             @db.Year
+  w_no          Int
+  w_start       DateTime        @db.Date
+  w_end         DateTime        @db.Date
+  tmp1          Int?
+  tmp2          Int?
+  ts_timesheets ts_timesheets[]
+}
+
+model users {
+  id                                  Int                @id @default(autoincrement())
+  name                                String             @db.VarChar(50)
+  middle                              String?            @db.VarChar(10)
+  sname                               String             @db.VarChar(50)
+  login                               String             @unique(map: "login") @db.VarChar(50)
+  sex                                 String             @db.VarChar(15)
+  email                               String             @unique(map: "email") @db.VarChar(100)
+  phone                               String?            @db.VarChar(50)
+  address                             String?            @db.VarChar(100)
+  position_id                         Int?
+  password                            String             @db.VarChar(255)
+  salt                                String             @db.VarChar(255)
+  avatar                              String?            @db.VarChar(150)
+  status                              Int                @default(0)
+  is_active                           Boolean            @default(false)
+  is_admin                            Boolean            @default(false)
+  is_ep                               Int?               @default(0)
+  tmp2                                Int?
+  tmp3                                Int?
+  tmp4                                Int?
+  tmp5                                Int?
+  app_permissions                     app_permissions[]
+  app_user_configs                    app_user_configs[]
+  company                             company[]
+  departments                         departments[]
+  project_team                        project_team[]
+  projects_projects_manager_idTousers projects[]         @relation("projects_manager_idTousers")
+  projects_projects_created_byTousers projects[]         @relation("projects_created_byTousers")
+  projects_projects_ep_idTousers      projects[]         @relation("projects_ep_idTousers")
+  ts_history                          ts_history[]
+  ts_timesheets                       ts_timesheets[]
+  positions                           positions?         @relation(fields: [position_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "users_ibfk_1")
+
+  @@unique([name, middle, sname], map: "full_name")
+  @@index([position_id], map: "users_pos_constr_1")
+}
